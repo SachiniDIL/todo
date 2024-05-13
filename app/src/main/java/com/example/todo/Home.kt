@@ -1,6 +1,7 @@
 package com.example.todo
 
 import android.app.AlertDialog
+import android.content.SharedPreferences
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -12,42 +13,73 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.Spinner
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import androidx.room.Room
-import com.example.todo_mobile_app.data.TodoDatabase
-import com.example.todo_mobile_app.data.TodoItem
-import com.example.todo_mobile_app.data.TodoItemDao
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import androidx.recyclerview.widget.RecyclerView
+import com.example.todo.data.TodoItem
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.DatabaseReference
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
 
 class Home : AppCompatActivity() {
+    // Firebase Database references
+    private lateinit var databaseReference: DatabaseReference
+    private lateinit var sharedPreferences: SharedPreferences
 
-    private lateinit var taskNameEditText: EditText
-    private lateinit var taskDescriptionEditText: EditText
-    private lateinit var prioritySpinner: Spinner
-    private lateinit var addTaskButton: Button
-    private lateinit var taskDao: TodoItemDao
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_home)
 
+
+
+        // Initialize Firebase Database reference
+        databaseReference = FirebaseDatabase.getInstance().getReference("tasks")
+        sharedPreferences = getSharedPreferences("todo_prefs", MODE_PRIVATE)
+
+
+        val todoList = ArrayList<TodoItem>()
+        databaseReference.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+
+
+                for (snapshot in snapshot.children) {
+                    val todo = snapshot.getValue(TodoItem::class.java)
+                    todo?.let {
+                        todoList.add(it)
+                    }
+                }
+
+
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                TODO("Not yet implemented")
+            }
+
+        })
+
+
+        val itemAdapter = TodoAdapter(todoList)
+
+        val recyclerView = findViewById<RecyclerView>(R.id.recyclerView)
+        recyclerView.adapter = itemAdapter
+
         val imageView3 = findViewById<ImageView>(R.id.imageView3)
 
-        imageView3.setOnClickListener {
-            showPopupForm()
-        }
+        imageView3.setOnClickListener{
+            showPopupForm() }
 
-        val db: TodoDatabase = Room.databaseBuilder(applicationContext, TodoDatabase::class.java, "tasks-db").build()
-        taskDao = db.todoItemDao()
     }
 
     private fun showPopupForm() {
-        try{
-        val dialogBuilder = AlertDialog.Builder(this)
         val inflater = LayoutInflater.from(this)
         val dialogView = inflater.inflate(R.layout.popup_layout_add, null)
+
+        val dialogBuilder = AlertDialog.Builder(this)
         dialogBuilder.setView(dialogView)
 
         val dropdownValues = arrayOf("1", "2", "3")
@@ -77,37 +109,58 @@ class Home : AppCompatActivity() {
             WindowManager.LayoutParams.WRAP_CONTENT
         )
 
-        taskNameEditText = dialogView.findViewById(R.id.task_name)
-        taskDescriptionEditText = dialogView.findViewById(R.id.task_description)
-        addTaskButton = dialogView.findViewById(R.id.add_task_button)
-
+        val addTaskButton = dialogView.findViewById<Button>(R.id.add_task_button)
         addTaskButton.setOnClickListener {
-            // Launch the save function in a coroutine scope
-            CoroutineScope(Dispatchers.IO).launch {
-                saveTaskToDatabase()
-                // Dismiss the dialog after saving (consider using withContext(Dispatchers.Main) for UI updates)
-                alertDialog.dismiss()
-            }
+            val taskName = dialogView.findViewById<EditText>(R.id.task_name).text.toString().trim()
+            val selectedPriority = dialogView.findViewById<Spinner>(R.id.priority_picker).selectedItem.toString()
+            val priority = Integer.parseInt(selectedPriority) // assuming priority is an integer
+
+            val nextTodoId = sharedPreferences.getInt("todoId", 0) + 1
+
+
+            // Create a Task object with retrieved data and incremented todoId
+            val task = TodoItem(nextTodoId, taskName, priority)
+
+            // Push task data to Firebase using push()
+            val newTaskRef = databaseReference.push()
+            newTaskRef.setValue(task)
+                .addOnSuccessListener {
+                    Log.d("Home", "Task added successfully!")
+                    // Store the updated todoId for future use
+                    sharedPreferences.edit().putInt("todoId", nextTodoId).apply()
+                    // Dismiss the dialog after saving
+                    alertDialog.dismiss()
+                }
+                .addOnFailureListener { exception ->
+                    Log.w("Home", "Error adding task:", exception)
+                }
         }
 
         alertDialog.show()
-
-    } catch (e: Exception) {
-        Log.e("Home", "Error in showPopupForm: ${e.message}", e)
-    }
     }
 
-    private suspend fun saveTaskToDatabase() {
-        try{
-        val taskName = taskNameEditText.text.toString().trim()
-        val taskDescription = taskDescriptionEditText.text.toString().trim()
-        val priority = prioritySpinner.selectedItem.toString().toInt()
-        val task = TodoItem(todoName = taskName, description = taskDescription, priority = priority)
 
-        taskDao.insertTodoItem(task) // This is a suspending function
+//    private fun fetchDataFromFirebase() {
+//        databaseReference.get().addOnSuccessListener { snapshot ->
+//            todoList.clear()
+//            for (dataSnapshot in snapshot.children) {
+//                val taskName = dataSnapshot.child("todoName").getValue(String::class.java)
+//                val priority = dataSnapshot.child("priority").getValue(Int::class.java)
+//                val id = dataSnapshot.child("todoID").getValue((Int::class.java))
+//                val status = dataSnapshot.child("status").getValue((String::class.java))
+//
+//                if (taskName != null && id != null && priority != null && status != null) {
+//                    val todoItem = TodoItem(id, taskName, priority, status)
+//                    todoList.add(todoItem)
+//                }
+//            }
+//            itemAdapter.notifyDataSetChanged() // Notify adapter of data change
+//        }
+//    }
 
-    } catch (e: Exception) {
-        Log.e("Home", "Error in saveTaskToDatabase: ${e.message}", e)
-    }
-    }
+}
+
+class TodoViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+    val taskNameTextView: TextView = itemView.findViewById(R.id.textView) // Replace with your IDs
+    // ... other view elements from todo_item.xml
 }

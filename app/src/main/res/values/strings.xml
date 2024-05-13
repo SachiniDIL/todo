@@ -1,4 +1,7 @@
 <resources>
     <string name="app_name">ToDo_mobile_app</string>
     <string name="todo">ToDo</string>
+    <string name="contin">Continue</string>
+    <string name="enter_your_name">Enter your name</string>
+    <string name="enter_your_username">Enter your username</string>
 </resources>
