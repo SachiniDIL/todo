@@ -1,5 +1,4 @@
 package com.example.todo
-
 import android.app.AlertDialog
 import android.content.SharedPreferences
 import android.os.Bundle
@@ -13,8 +12,9 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.Spinner
-import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.todo.data.TodoItem
 import com.google.firebase.database.DataSnapshot
@@ -22,59 +22,69 @@ import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import kotlin.coroutines.suspendCoroutine
 
 class Home : AppCompatActivity() {
     // Firebase Database references
     private lateinit var databaseReference: DatabaseReference
     private lateinit var sharedPreferences: SharedPreferences
 
-
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_home)
-
-
 
         // Initialize Firebase Database reference
         databaseReference = FirebaseDatabase.getInstance().getReference("tasks")
         sharedPreferences = getSharedPreferences("todo_prefs", MODE_PRIVATE)
 
-
-        val todoList = ArrayList<TodoItem>()
-        databaseReference.addValueEventListener(object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-
-
-                for (snapshot in snapshot.children) {
-                    val todo = snapshot.getValue(TodoItem::class.java)
-                    todo?.let {
-                        todoList.add(it)
-                    }
-                }
-
-
-            }
-
-            override fun onCancelled(error: DatabaseError) {
-                TODO("Not yet implemented")
-            }
-
-        })
-
-
-        val itemAdapter = TodoAdapter(todoList)
-
-        val recyclerView = findViewById<RecyclerView>(R.id.recyclerView)
-        recyclerView.adapter = itemAdapter
-
         val imageView3 = findViewById<ImageView>(R.id.imageView3)
+        imageView3.setOnClickListener {
+            showPopupForm()
+        }
 
-        imageView3.setOnClickListener{
-            showPopupForm() }
-
+        lifecycleScope.launch {
+            try {
+                val todoList = fetchDataFromFirebase()
+                updateUI(todoList)
+            } catch (e: Exception) {
+                // Handle exceptions
+                Log.e("Home", "Error fetching tasks:", e)
+            }
+        }
     }
 
+    private suspend fun fetchDataFromFirebase(): List<TodoItem> {
+        return suspendCoroutine { continuation ->
+            databaseReference.addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    val todoList = mutableListOf<TodoItem>()
+                    for (dataSnapshot in snapshot.children) {
+                        val todo = dataSnapshot.getValue(TodoItem::class.java)
+                        todo?.let { todoList.add(it) }
+                    }
+                    continuation.resume(todoList)
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    continuation.resumeWithException(error.toException())
+                }
+            })
+        }
+    }
+
+    private suspend fun updateUI(todoList: List<TodoItem>) {
+        withContext(Dispatchers.Main) {
+            val recyclerView = findViewById<RecyclerView>(R.id.recyclerView)
+            recyclerView.layoutManager = LinearLayoutManager(this@Home)
+            val itemAdapter = TodoAdapter(todoList)
+            recyclerView.adapter = itemAdapter
+        }
+    }
     private fun showPopupForm() {
         val inflater = LayoutInflater.from(this)
         val dialogView = inflater.inflate(R.layout.popup_layout_add, null)
@@ -93,11 +103,11 @@ class Home : AppCompatActivity() {
         spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
                 val selectedPriority = dropdownValues[position].toInt()
-                // Do something with the selected priority
+
             }
 
             override fun onNothingSelected(parent: AdapterView<*>?) {
-                // Another interface callback
+
             }
         }
 
@@ -112,7 +122,7 @@ class Home : AppCompatActivity() {
         val addTaskButton = dialogView.findViewById<Button>(R.id.add_task_button)
         addTaskButton.setOnClickListener {
             val taskName = dialogView.findViewById<EditText>(R.id.task_name).text.toString().trim()
-            val selectedPriority = dialogView.findViewById<Spinner>(R.id.priority_picker).selectedItem.toString()
+            val selectedPriority = spinner.selectedItem.toString()
             val priority = Integer.parseInt(selectedPriority) // assuming priority is an integer
 
             val nextTodoId = sharedPreferences.getInt("todoId", 0) + 1
@@ -139,28 +149,4 @@ class Home : AppCompatActivity() {
         alertDialog.show()
     }
 
-
-//    private fun fetchDataFromFirebase() {
-//        databaseReference.get().addOnSuccessListener { snapshot ->
-//            todoList.clear()
-//            for (dataSnapshot in snapshot.children) {
-//                val taskName = dataSnapshot.child("todoName").getValue(String::class.java)
-//                val priority = dataSnapshot.child("priority").getValue(Int::class.java)
-//                val id = dataSnapshot.child("todoID").getValue((Int::class.java))
-//                val status = dataSnapshot.child("status").getValue((String::class.java))
-//
-//                if (taskName != null && id != null && priority != null && status != null) {
-//                    val todoItem = TodoItem(id, taskName, priority, status)
-//                    todoList.add(todoItem)
-//                }
-//            }
-//            itemAdapter.notifyDataSetChanged() // Notify adapter of data change
-//        }
-//    }
-
-}
-
-class TodoViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-    val taskNameTextView: TextView = itemView.findViewById(R.id.textView) // Replace with your IDs
-    // ... other view elements from todo_item.xml
 }

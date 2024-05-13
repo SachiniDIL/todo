@@ -48,4 +48,6 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+    implementation ("androidx.lifecycle:lifecycle-runtime-ktx:1.3.3")
+    implementation ("com.google.firebase:firebase-database-ktx:21.0.0")
 }
