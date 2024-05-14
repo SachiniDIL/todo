@@ -24,7 +24,7 @@ class MainActivity : AppCompatActivity() {
 
         CoroutineScope(Dispatchers.IO).launch {  // Launch in a coroutine scope using IO dispatcher
             delay(3000)  // Delay for 2 seconds using coroutines
-            val intent = Intent(this@MainActivity, Home::class.java)
+            val intent = Intent(this@MainActivity, login::class.java)
             startActivity(intent)
         }
     }

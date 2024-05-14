@@ -2,6 +2,8 @@ package com.example.todo
 
 import android.app.AlertDialog
 import android.content.SharedPreferences
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -13,7 +15,7 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.Spinner
-import android.widget.Toast
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
@@ -33,12 +35,18 @@ class Home : AppCompatActivity(), TodoAdapter.OnItemClickListener {
     private lateinit var todoAdapter: TodoAdapter
     private lateinit var recyclerView: RecyclerView
     private lateinit var todoViewModel: TodoViewModel
+    private lateinit var textView2: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_home)
 
-        sharedPreferences = getSharedPreferences("todo_prefs", MODE_PRIVATE)
+        sharedPreferences = getSharedPreferences("todo_prefs", MODE_PRIVATE)?:
+        return
+        // Retrieve and display the username
+        val username = sharedPreferences.getString("username", "User")
+        textView2 = findViewById(R.id.textView2)
+        textView2.text = "Hi $username"
 
         // Initialize RecyclerView and adapter
         recyclerView = findViewById(R.id.recyclerView)
@@ -169,6 +177,9 @@ class Home : AppCompatActivity(), TodoAdapter.OnItemClickListener {
 
         val alertDialog = dialogBuilder.create()
 
+        alertDialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+
+
         // Set the WindowManager LayoutParams to ensure the dialog appears correctly
         alertDialog.window?.setLayout(
             WindowManager.LayoutParams.MATCH_PARENT,
@@ -204,8 +215,20 @@ class Home : AppCompatActivity(), TodoAdapter.OnItemClickListener {
         // Retrieve the clicked item from the adapter
         val clickedItem = todoAdapter.getItemAtPosition(position)
 
-        // Show a toast message with the name of the clicked item
-        Toast.makeText(this, "Clicked item: ${clickedItem.todoName}", Toast.LENGTH_SHORT).show()
+        // Toggle the isDone status
+        clickedItem.isDone = if (clickedItem.isDone == 1) 0 else 1
+
+        // Update the item in the database
+        val dbHelper = DatabaseHelper(this)
+        val rowsAffected = dbHelper.updateTaskStatus(clickedItem.id, clickedItem.isDone)
+
+        if (rowsAffected > 0) {
+            Log.d("Home", "Task status updated successfully!")
+            // Notify the adapter to refresh the UI
+            todoAdapter.notifyItemChanged(position)
+        } else {
+            Log.e("Home", "Error updating task status!")
+        }
     }
 
     override fun onUpdateClick(position: Int) {
@@ -233,6 +256,8 @@ class Home : AppCompatActivity(), TodoAdapter.OnItemClickListener {
         dialogBuilder.setView(dialogView)
 
         val alertDialog = dialogBuilder.create()
+        alertDialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+
 
         // Set the WindowManager LayoutParams to ensure the dialog appears correctly
         alertDialog.window?.setLayout(

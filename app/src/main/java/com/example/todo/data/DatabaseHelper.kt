@@ -49,16 +49,18 @@ class DatabaseHelper(context: Context) :
         return db.delete(TodoContract.TodoEntry.TABLE_NAME, selection, selectionArgs)
     }
 
-    fun updateIsDone(id: Int, done: Int) {
+    // Update the isDone status of a task
+    fun updateIsDone(id: Int, done: Int): Int {
         val db = writableDatabase
         val values = ContentValues().apply {
             put(TodoContract.TodoEntry.COLUMN_IS_DONE, done)
         }
         val selection = "${TodoContract.TodoEntry.COLUMN_ID} = ?"
         val selectionArgs = arrayOf(id.toString())
-        db.update(TodoContract.TodoEntry.TABLE_NAME, values, selection, selectionArgs)
+        return db.update(TodoContract.TodoEntry.TABLE_NAME, values, selection, selectionArgs)
     }
 
+    // Get all todo items from the database
     fun getAllTodoItems(): List<TodoItem> {
         val todoList = mutableListOf<TodoItem>()
         val db = readableDatabase
@@ -91,6 +93,17 @@ class DatabaseHelper(context: Context) :
         return todoList
     }
 
+    // Update the task status (isDone value)
+    fun updateTaskStatus(id: Int, isDone: Int): Int {
+        val db = writableDatabase
+        val values = ContentValues().apply {
+            put(TodoContract.TodoEntry.COLUMN_IS_DONE, isDone)
+        }
+        val selection = "${TodoContract.TodoEntry.COLUMN_ID} = ?"
+        val selectionArgs = arrayOf(id.toString())
+        return db.update(TodoContract.TodoEntry.TABLE_NAME, values, selection, selectionArgs)
+    }
+
     companion object {
         const val DATABASE_VERSION = 2
         const val DATABASE_NAME = "Todo.db"
@@ -98,6 +111,7 @@ class DatabaseHelper(context: Context) :
             "CREATE TABLE ${TodoContract.TodoEntry.TABLE_NAME} (" +
                     "${TodoContract.TodoEntry.COLUMN_ID} INTEGER PRIMARY KEY," +
                     "${TodoContract.TodoEntry.COLUMN_TASK_NAME} TEXT," +
-                    "${TodoContract.TodoEntry.COLUMN_PRIORITY} INTEGER)"
+                    "${TodoContract.TodoEntry.COLUMN_PRIORITY} INTEGER," +
+                    "${TodoContract.TodoEntry.COLUMN_IS_DONE} INTEGER DEFAULT 0)"
     }
 }

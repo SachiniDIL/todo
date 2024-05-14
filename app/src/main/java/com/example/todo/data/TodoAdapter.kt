@@ -17,18 +17,37 @@ class TodoAdapter(
     inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView), View.OnClickListener {
         val todoNameTextView: TextView = itemView.findViewById(R.id.textView)
         val todoCheckBox: ImageView = itemView.findViewById(R.id.imageView4)
-        val updateButton: ImageView = itemView.findViewById(R.id.imageView5)
+        private val updateButton: ImageView = itemView.findViewById(R.id.imageView5)
 
         init {
-            // Set click listener on the item view
+            // Set click listener on the item view for general clicks
             itemView.setOnClickListener(this)
+
+            // Set click listener for the update button
+            updateButton.setOnClickListener {
+                val position = adapterPosition
+                if (position != RecyclerView.NO_POSITION) {
+                    listener.onUpdateClick(position)
+                }
+            }
+
+            // Set click listener for the checkbox
+            todoCheckBox.setOnClickListener {
+                val position = adapterPosition
+                if (position != RecyclerView.NO_POSITION) {
+                    val currentItem = todoList[position]
+                    val newIsDoneValue = if (currentItem.isDone == 1) 0 else 1
+                    currentItem.isDone = newIsDoneValue
+                    databaseHelper.updateIsDone(currentItem.id, newIsDoneValue)
+                    notifyItemChanged(position)
+                }
+            }
         }
 
         override fun onClick(v: View?) {
             val position = adapterPosition
             if (position != RecyclerView.NO_POSITION) {
-                // Notify the listener that an update action is requested
-                listener.onUpdateClick(position)
+                listener.onItemClick(position)
             }
         }
     }
@@ -55,15 +74,7 @@ class TodoAdapter(
             holder.todoCheckBox.setImageResource(R.drawable.baseline_radio_button_unchecked_24)
             holder.todoNameTextView.alpha = 1f // Reset the item text alpha
         }
-
-        holder.itemView.apply {
-            // Set click listener for update button
-            findViewById<ImageView>(R.id.imageView4).setOnClickListener {
-                listener.onItemClick(position)
-            }
-        }
     }
-
 
     override fun getItemCount(): Int {
         return todoList.size
