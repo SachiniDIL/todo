@@ -65,7 +65,6 @@ class Home : AppCompatActivity(), TodoAdapter.OnItemClickListener {
                 viewHolder: RecyclerView.ViewHolder,
                 target: RecyclerView.ViewHolder
             ): Boolean {
-                // Not needed for swipe-to-delete
                 return false
             }
 
@@ -167,11 +166,9 @@ class Home : AppCompatActivity(), TodoAdapter.OnItemClickListener {
 
         spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                // Handle item selection if needed
             }
 
             override fun onNothingSelected(parent: AdapterView<*>?) {
-                // Handle nothing selected if needed
             }
         }
 
@@ -259,7 +256,6 @@ class Home : AppCompatActivity(), TodoAdapter.OnItemClickListener {
         alertDialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
 
 
-        // Set the WindowManager LayoutParams to ensure the dialog appears correctly
         alertDialog.window?.setLayout(
             WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.WRAP_CONTENT

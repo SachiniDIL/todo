@@ -15,7 +15,7 @@ class TodoViewModel(private val databaseHelper: DatabaseHelper) : ViewModel() {
         loadTodoList()
     }
 
-    fun loadTodoList() {
+    private fun loadTodoList() {
         // Load todo list from the database using the helper
         _todoList.value = fetchTasksFromSQLite()
     }

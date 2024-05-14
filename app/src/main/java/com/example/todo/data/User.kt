@@ -1,4 +1,4 @@
-package com.example.todo_mobile_app.data
+package com.example.todo.data
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey

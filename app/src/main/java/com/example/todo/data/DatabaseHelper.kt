@@ -14,7 +14,7 @@ class DatabaseHelper(context: Context) :
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
         if (oldVersion != DATABASE_VERSION) {
-            // Handle upgrade logic here, including adding the new column
+            //adding the new column
             db.execSQL("ALTER TABLE ${TodoContract.TodoEntry.TABLE_NAME} ADD COLUMN ${TodoContract.TodoEntry.COLUMN_IS_DONE} INTEGER DEFAULT 0")
         }
     }
