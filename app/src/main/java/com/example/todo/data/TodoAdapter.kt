@@ -17,6 +17,7 @@ class TodoAdapter(
     inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView), View.OnClickListener {
         val todoNameTextView: TextView = itemView.findViewById(R.id.textView)
         val todoCheckBox: ImageView = itemView.findViewById(R.id.imageView4)
+        val updateButton: ImageView = itemView.findViewById(R.id.imageView5)
 
         init {
             // Set click listener on the item view
@@ -57,7 +58,7 @@ class TodoAdapter(
 
         holder.itemView.apply {
             // Set click listener for update button
-            findViewById<ImageView>(R.id.imageView5).setOnClickListener {
+            findViewById<ImageView>(R.id.imageView4).setOnClickListener {
                 listener.onItemClick(position)
             }
         }

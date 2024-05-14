@@ -216,9 +216,18 @@ class Home : AppCompatActivity(), TodoAdapter.OnItemClickListener {
         val inflater = LayoutInflater.from(this)
         val dialogView = inflater.inflate(R.layout.popup_layout_update, null)
 
+        // Set up the Spinner adapter
+        val spinner = dialogView.findViewById<Spinner>(R.id.priority_picker)
+        val dropdownValues = arrayOf("1", "2", "3")
+        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, dropdownValues)
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        spinner.adapter = adapter
+
         // Populate input fields with relevant item data
         dialogView.findViewById<EditText>(R.id.task_name).setText(todoItem.todoName)
-        dialogView.findViewById<Spinner>(R.id.priority_picker).setSelection(todoItem.priority - 1)
+
+        // Set the Spinner selection based on the current priority of the task
+        spinner.setSelection(todoItem.priority - 1)
 
         val dialogBuilder = AlertDialog.Builder(this)
         dialogBuilder.setView(dialogView)
@@ -234,7 +243,7 @@ class Home : AppCompatActivity(), TodoAdapter.OnItemClickListener {
         val updateTaskButton = dialogView.findViewById<Button>(R.id.add_task_button)
         updateTaskButton.setOnClickListener {
             val updatedTaskName = dialogView.findViewById<EditText>(R.id.task_name).text.toString().trim()
-            val updatedPriority = dialogView.findViewById<Spinner>(R.id.priority_picker).selectedItem.toString().toInt()
+            val updatedPriority = spinner.selectedItem.toString().toInt()
 
             // Update the task in the database
             val dbHelper = DatabaseHelper(this)
@@ -255,5 +264,6 @@ class Home : AppCompatActivity(), TodoAdapter.OnItemClickListener {
 
         alertDialog.show()
     }
+
 
 }
